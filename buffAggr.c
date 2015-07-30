@@ -13,7 +13,6 @@ typedef struct{
 struct List{
 	struct List* next;
 	CharBuffer* data;
-//	int offset;
 };
 
 typedef struct List Node;
@@ -21,30 +20,15 @@ typedef struct List Node;
 // ordered list can be done later
 
 Node* head = NULL;
-void split(Node*,char*,int, int);
-CharBuffer* createBuffer(char* str,int size,int offset){
-	printf("\n in create buffer");
-	CharBuffer* charbuf = (CharBuffer*)malloc(sizeof(CharBuffer));
-	(charbuf)->buf = (char*)malloc(sizeof(char)*size);
-	strcpy((charbuf)->buf,str);
-	(charbuf)->offset = offset;
-	(charbuf)->size = size;
-	return charbuf;
-}
 
-Node* createNode(){
-	printf("\n creating node");
-	Node* n = (Node*)malloc(sizeof(Node));
-	n->next = NULL;
-	return n;
-}
-/* Frees the memory allocated for buffer */
-void freeCharData(CharBuffer* x){
-	printf("\n In Free Char data");
-	if(x!=NULL){
-		free(x->buf);
-	}
-}
+void split(Node*,char*,int, int);
+void freeNode(Node* x);
+Node* createHead();
+void insertToList(Node** x,char* str, int size, int offset);
+int findOffset(Node* head,int offset,Node** new_ptr);
+void removeFromList(Node** head, int offset);
+void printAggr(Node* aggr);
+void freeList(Node** head);
 
 /* Frees the memory allocated for the Node*/
 void freeNode(Node* x){
@@ -72,18 +56,14 @@ Node* createHead(){
 void insertToList(Node** head, char* str, int size,int offset){
 	printf("\ninserting to list%s",str);
 	if((*head)->data==NULL){
-	//	*head = createHead();
-		printf("\ncallin createBuffer");
 		(*head)->data =(CharBuffer*)malloc(sizeof(CharBuffer));
 		(*head)->data->offset = offset;
 		(*head)->data->size = size;
-		(*head)->data->buf = (char*)malloc(sizeof(char)*size);
+		(*head)->data->buf = (char*)malloc(sizeof(char)*(size));
 		strcpy((*head)->data->buf,str); 
-	//	printf("value in the buffer is%s",(head)->data->buf);
 		printf("\nreturning from insert to list");
 		return;
 	}
-//	Node* new_ptr;
 	Node* new_ptr = (Node*)malloc(sizeof(Node));
 	new_ptr->next = NULL;
 	
@@ -97,9 +77,16 @@ void insertToList(Node** head, char* str, int size,int offset){
 		while(x->next!=NULL)
 			x=x->next;
 		/* create a new Node*/
-		Node* newNode = createNode();
-	 	newNode->data=createBuffer(str, size,offset);
+		Node* newNode = (Node*)malloc(sizeof(Node));
+		newNode->next = NULL;
+	 	CharBuffer* charbuf = (CharBuffer*)malloc(sizeof(CharBuffer));
+		(charbuf)->buf = (char*)malloc(sizeof(char)*(size));
+		strcpy((charbuf)->buf,str);
+		(charbuf)->offset = offset;
+		(charbuf)->size = size;
+		
 		/* make the last node point to the newly created node*/
+		newNode->data = charbuf;
 		x->next = newNode;
 		return;
 	}
@@ -167,7 +154,7 @@ void split(Node*p, char* str,int offset, int size){
 		r->next = q->next->next;
 		q->next = r;
 	}
-	free(org->str);
+	free(org_str);
 }
 
 /* returns the position if the offset already exists 
@@ -186,7 +173,6 @@ int findOffset(Node* head,int offset,Node** new_ptr){
 	}
 	return 0;
 }
-
 
 void removeFromList(Node** head, int offset){
 	//int location = findOffset(head, offset);
@@ -214,13 +200,10 @@ void removeFromList(Node** head, int offset){
 	printf("\n removed node");
 }
 
-void printCharBuffer(CharBuffer *ptr){
-	printf("\nPRINT:%d,%d",ptr->offset, ptr->size);
-}
 void printAggr(Node* aggr){
 	Node* ptr = aggr;
 	printf("\nin print aggr");
-	printf("\n PRINTING:%d",ptr->data->offset);
+	printf("\n %d",ptr->data->offset);
 	while(ptr!=NULL){
 		printf("\n %d: %d: %s:", ptr->data->offset,ptr->data->size,ptr->data->buf);
 		ptr = ptr->next;	
@@ -237,6 +220,40 @@ void freeList(Node** head){
 	}
 }
 
+void check(){
+}
+
+char* read(int start, int end){
+	
+	Node* q = head;
+	CharBuffer* cb;
+	char str[end-start+1];
+	int index = 0;
+	while(q!=NULL && start<= end){
+	
+		cb = q->data;
+		if( (start >= cb->offset) && (end < (cb->offset + cb->size)) ){
+			printf("\n1 start:%dend:%d",start,end);
+			printf("\n1 %*s",2,cb->buf+(start-cb->offset));
+			printf("\n %d index",index);
+			strncpy(str+index,cb->buf+(start-cb->offset),(end - start+1));
+			
+		break;
+		}
+		else if((cb->offset<= start) &&(cb->offset+cb->size)>start){
+		printf("\n2 %*s",(cb->offset + cb->size - start), cb->buf+(start-cb->offset));
+		strncpy(str+index,cb->buf+(start-cb->offset), (cb->offset + cb->size-start));
+		index+= ( cb->offset + cb->size -  start );
+		if(q->next != NULL)
+		start = q->next->data->offset;
+		}
+		q = q->next;
+		
+	}
+	printf("read this%s",str);
+	return str;
+}
+
 main(){
 	char *p = "harsh";
 	head = (Node*)malloc(sizeof(Node)); 
@@ -244,10 +261,11 @@ main(){
 	insertToList(&head,p, 5, 0);
 	insertToList(&head,"abcdef",6,7);
 	insertToList(&head,"harshitha",9,13);
-	insertToList(&head,"hhh",3,1);
+//	insertToList(&head,"hhh",3,1);
 //	printAggr(head);
 	//removeFromList(&head,7);
 	printf("\n printing data");
 	printAggr(head);
+	read(7,15);
 	freeList(&head);
 }
