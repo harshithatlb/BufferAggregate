@@ -26,13 +26,12 @@ void freeNode(Node* x);
 Node* createHead();
 void insertToList(Node** x,char* str, int size, int offset);
 int findOffset(Node* head,int offset,Node** new_ptr);
-void removeFromList(Node** head, int offset);
+int removeFromList(Node** head, int offset);
 void printAggr(Node* aggr);
 void freeList(Node** head);
 
 /* Frees the memory allocated for the Node*/
 void freeNode(Node* x){
-	printf("\n Freeing Node");
 	if(x!=NULL)
 	{
 		if(x->data!=NULL){
@@ -41,36 +40,28 @@ void freeNode(Node* x){
 			free(x);
 		}
 	}
-	printf("\n done with freeing");
 }
 /* allocates memory for head node*/
 Node* createHead(){
 	
-	printf("\n create Node head");
 	Node *head = (Node*)malloc(sizeof(Node));
 	(head)->next = NULL;
-	printf("\n returning from create Node head");
 	return head;
 }
 /* inserts new buffer to end of list */
 void insertToList(Node** head, char* str, int size,int offset){
-	printf("\ninserting to list%s",str);
-	if((*head)->data==NULL){
+	if((*head)->data == NULL){
 		(*head)->data =(CharBuffer*)malloc(sizeof(CharBuffer));
 		(*head)->data->offset = offset;
 		(*head)->data->size = size;
 		(*head)->data->buf = (char*)malloc(sizeof(char)*(size));
 		strcpy((*head)->data->buf,str); 
-		printf("\nreturning from insert to list");
 		return;
 	}
 	Node* new_ptr = (Node*)malloc(sizeof(Node));
 	new_ptr->next = NULL;
 	
 	int offset_exists = findOffset(*head,offset,&new_ptr);
-	
-	printf("\n offset_exists:%d", offset_exists);
-	
 	if(offset_exists == 0){
 		Node* x= *head;
 		/* go to the last node*/
@@ -90,40 +81,36 @@ void insertToList(Node** head, char* str, int size,int offset){
 		x->next = newNode;
 		return;
 	}
-	else if(offset_exists==1){
-		printf("\noffset exists");	
-		printf("\n existing offset is %s",new_ptr->data->buf);
+	else if(offset_exists == 1)
 		split(new_ptr, str,offset,size);
-	}
+	
 }
 
 void split(Node*p, char* str,int offset, int size){
+	// what is org_size
 	int org_size = p->data->size;
 	int org_offset = p->data->offset;	
-	// freeing at the end
-	char* org_str= (char*)malloc(sizeof(org_size));
+	//  creating a copy of the buffer's data
+	char* org_str = (char*)malloc(sizeof(org_size));
 	memcpy(org_str,p->data->buf,org_size);
 
 	//Memory for new node holding offset to be inserted
 	Node *q = (Node*)malloc(sizeof(Node));
 	q->data = (CharBuffer*)malloc(sizeof(CharBuffer));
-	int part_two_size = (p->data->offset+p->data->size)- offset;
 
-	int size1=p->data->offset;
-	int size2= p->data->size;
+	int part_two_size = (p->data->offset+p->data->size)- offset;
+	int size1 = p->data->offset;
+	int size2 = p->data->size;
 	
-	printf("\n part two size :=%d",part_two_size);
 	q->data->buf = (char*)malloc(sizeof(char)*part_two_size);
 
-	printf("\nallocation done for size of part two");	
 	char *buf_ptr = p->data->buf;
 
 	char *rev = buf_ptr;
 	rev = rev+offset;
-	printf("\n printing the second half:%s",rev);	
+	//copying the content of data after the offset at split to q
 	memcpy(q->data->buf,buf_ptr+offset,part_two_size*sizeof(char));
 
-	printf("\n memcopied");
 	q->data->size = size;
 	q->data->offset = offset;
 	q->next = p->next;
@@ -132,25 +119,29 @@ void split(Node*p, char* str,int offset, int size){
 	//copy to p
 	
 	int prev_size = q->data->offset - p->data->offset;
-	int prev_offset =p->data->offset;
+	int prev_offset = p->data->offset;
 	char* prev_data = (char*) malloc(sizeof(char)*prev_size);
 	memcpy(prev_data,p->data->buf,sizeof(char)*prev_size);
+	// freeing the data buffer 
 	free(p->data->buf);
 	p->data->buf = prev_data;
 	p->data->offset = prev_offset;
 	p->data->size = prev_size;
 	
-	printf("\n new pointer:%s",q->data->buf);
 	if(q->data->offset+ q->data->size < org_offset+org_size){
-		int r_size =(org_offset+org_size)-( q->data->offset+q->data->size);
+		int r_size = q->data->size - size+1;
+		int qsize = q->data->size;
+		q->data->size = size;
+		free(q->data->buf);
+		q->data->buf = (char*)malloc(sizeof(char)*size);
+		memcpy(q->data->buf,str,sizeof(char)*size);
+
 		Node* r =(Node*)malloc(sizeof(Node));
 		r->data = (CharBuffer*)malloc(sizeof(Node));
 		r->data->buf = (char*)malloc(sizeof(char)*r_size);
-		
-		r->data->offset = q->data->offset+q->data->size;
+		r->data->offset = q->data->offset+size;
 		r->data->size = r_size;
-		memcpy(r->data->buf,org_str+r->data->offset,sizeof(char)*size);
-		
+		memcpy(r->data->buf,org_str+r->data->offset,sizeof(char)*r_size);
 		r->next = q->next->next;
 		q->next = r;
 	}
@@ -173,45 +164,50 @@ int findOffset(Node* head,int offset,Node** new_ptr){
 	}
 	return 0;
 }
-
-void removeFromList(Node** head, int offset){
+/*  removes the buffer from buffer aggr linked list 
+	if the offset matched 
+*/
+int removeFromList(Node** head, int offset){
 	//int location = findOffset(head, offset);
-	printf("\n removing from list ");
 	Node* p = *head;
+	int retval= 0;
 	int i =0;
+	// if the node to be removed is head
 	if((*head)->data->offset == offset)
 	{
 		*head = (*head)->next;
 		freeNode(p);
-		return;
+		return 1;
 	}
+	// move to the node before p, p is the one to be removed
 	while(p->next!=NULL) {
-		if(p->next->data->offset == offset)	
+		if(p->next->data->offset == offset)	{
+			retval = 1;
 			break;
+		}
 		p = p->next;
 	}
+	// q is the node to be removed
+	Node* q;
+	q = p->next;
 	
-	printf("\n printing value of prev node%d", p->data->offset);	
-	
-	Node* q = p->next;
-	if(p->next!=NULL)
-	p->next = p->next->next;
+	if(p->next->next!=NULL)
+			p->next = p->next->next;
 	freeNode(q);
-	printf("\n removed node");
+	return retval;
 }
 
+/* to print the contents of the ADT */
 void printAggr(Node* aggr){
 	Node* ptr = aggr;
-	printf("\nin print aggr");
-	printf("\n %d",ptr->data->offset);
 	while(ptr!=NULL){
-		printf("\n %d: %d: %s:", ptr->data->offset,ptr->data->size,ptr->data->buf);
+		printf("\n %d: %d: %s", ptr->data->offset,ptr->data->size,ptr->data->buf);
 		ptr = ptr->next;	
 	}
 }
 
+/* 	Free the ADT*/
 void freeList(Node** head){
-	printf("\nIn freeing List");
 	Node* p = *head;
 	while((*head)->next!=NULL){
 		*head = (*head)->next;	
@@ -220,40 +216,26 @@ void freeList(Node** head){
 	}
 }
 
-void check(){
-}
-
-char* read(int start, int end){
-	
+void read(int start, int end){
 	Node* q = head;
 	CharBuffer* cb;
 	char str[end-start+1];
 	int index = 0;
 	while(q!=NULL && start<= end){
-	
 		cb = q->data;
 		if( (start >= cb->offset) && (end < (cb->offset + cb->size)) ){
-			printf("\n1 start:%dend:%d",start,end);
-			printf("\n1 %*s",2,cb->buf+(start-cb->offset));
-			printf("\n %d index",index);
 			strncpy(str+index,cb->buf+(start-cb->offset),(end - start+1));
-			
-		break;
+			break;
 		}
 		else if((cb->offset<= start) &&(cb->offset+cb->size)>start){
-		printf("\n2 %*s",(cb->offset + cb->size - start), cb->buf+(start-cb->offset));
-		strncpy(str+index,cb->buf+(start-cb->offset), (cb->offset + cb->size-start));
-		index+= ( cb->offset + cb->size -  start );
-		if(q->next != NULL)
-		start = q->next->data->offset;
+			strncpy(str+index,cb->buf+(start-cb->offset), (cb->offset + cb->size-start));
+			index+= ( cb->offset + cb->size -  start );
+			if(q->next != NULL)
+				start = q->next->data->offset;
 		}
 		q = q->next;
-		
 	}
-	printf("read this%s",str);
-	return str;
 }
-
 main(){
 	char *p = "harsh";
 	head = (Node*)malloc(sizeof(Node)); 
@@ -261,11 +243,10 @@ main(){
 	insertToList(&head,p, 5, 0);
 	insertToList(&head,"abcdef",6,7);
 	insertToList(&head,"harshitha",9,13);
-//	insertToList(&head,"hhh",3,1);
+	insertToList(&head,"hhh",3,1);
 //	printAggr(head);
 	//removeFromList(&head,7);
-	printf("\n printing data");
 	printAggr(head);
-	read(7,15);
+//	read(7,15);
 	freeList(&head);
 }
