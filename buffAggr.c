@@ -58,7 +58,7 @@ void insertToList(Node** head, char* str, int size,int offset){
 		strcpy((*head)->data->buf,str); 
 		return;
 	}
-	Node* new_ptr = (Node*)malloc(sizeof(Node));
+	Node* new_ptr= (Node*)malloc(sizeof(Node));
 	new_ptr->next = NULL;
 	
 	int offset_exists = findOffset(*head,offset,&new_ptr);
@@ -79,11 +79,15 @@ void insertToList(Node** head, char* str, int size,int offset){
 		/* make the last node point to the newly created node*/
 		newNode->data = charbuf;
 		x->next = newNode;
+		free(new_ptr);
 		return;
 	}
-	else if(offset_exists == 1)
+
+	else if(offset_exists == 1){
 		split(new_ptr, str,offset,size);
-	
+		new_ptr = NULL;
+		free(new_ptr);
+	}
 }
 
 void split(Node*p, char* str,int offset, int size){
@@ -142,10 +146,11 @@ void split(Node*p, char* str,int offset, int size){
 		r->data->offset = q->data->offset+size;
 		r->data->size = r_size;
 		memcpy(r->data->buf,org_str+r->data->offset,sizeof(char)*r_size);
-		r->next = q->next->next;
+		r->next = q->next;
 		q->next = r;
 	}
 	free(org_str);
+	
 }
 
 /* returns the position if the offset already exists 
@@ -209,10 +214,10 @@ void printAggr(Node* aggr){
 /* 	Free the ADT*/
 void freeList(Node** head){
 	Node* p = *head;
-	while((*head)->next!=NULL){
-		*head = (*head)->next;	
+	while(p->next!=NULL){
+		printf("\n%s",p->data->buf);
 		freeNode(p);
-		p = *head;
+		p= p->next;
 	}
 }
 
@@ -241,9 +246,9 @@ main(){
 	head = (Node*)malloc(sizeof(Node)); 
 	head->next = NULL;
 	insertToList(&head,p, 5, 0);
-	insertToList(&head,"abcdef",6,7);
-	insertToList(&head,"harshitha",9,13);
-	insertToList(&head,"hhh",3,1);
+//	insertToList(&head,"abcdef",6,7);
+//	insertToList(&head,"harshitha",9,13);
+//	insertToList(&head,"hhh",3,1);
 //	printAggr(head);
 	//removeFromList(&head,7);
 	printAggr(head);
